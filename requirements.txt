@@ -1,0 +1,8 @@
+Flask
+python-dotenv
+google-genai
+pdfplumber
+pytesseract
+Pillow
+pandas
+werkzeug

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered invoice processing system — upload, extract, classify, and route invoices automatically using Gemini AI.">
+    <title>InvoiceAI — Smart Invoice Automation</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- App Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- NAVBAR                                                             -->
+    <!-- ================================================================= -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="nav-logo">🧾</span>
+                <span class="nav-title">Invoice<span class="accent">AI</span></span>
+            </div>
+            <div class="nav-links">
+                <a href="#upload-section" class="nav-link">Upload</a>
+                <a href="#dashboard-section" class="nav-link">Dashboard</a>
+                <a href="#results-section" class="nav-link">Results</a>
+                <a href="#logs-section" class="nav-link">Logs</a>
+            </div>
+            <div class="nav-actions">
+                <button class="btn btn-outline btn-sm" id="exportCsvBtn" title="Export CSV">
+                    📥 Export CSV
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ================================================================= -->
+    <!-- HERO SECTION                                                       -->
+    <!-- ================================================================= -->
+    <section class="hero" id="hero">
+        <div class="hero-bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="hero-content">
+            <h1 class="hero-title">
+                AI-Powered <span class="gradient-text">Invoice Automation</span>
+            </h1>
+            <p class="hero-subtitle">
+                Upload invoices in PDF, JPG, or PNG — our Gemini AI extracts data,
+                classifies document types, and routes them intelligently.
+            </p>
+            <a href="#upload-section" class="btn btn-primary btn-lg hero-cta">
+                Get Started →
+            </a>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- UPLOAD SECTION                                                     -->
+    <!-- ================================================================= -->
+    <section class="section" id="upload-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Upload Invoices</h2>
+                <p class="section-desc">Drag & drop or click to upload PDF, JPG, or PNG invoices for AI processing.</p>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-zone-content">
+                    <div class="upload-icon">📄</div>
+                    <h3 class="upload-title">Drop files here</h3>
+                    <p class="upload-hint">or click to browse — PDF, JPG, PNG, JSON supported</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.json" hidden>
+                </div>
+                <div class="upload-progress-container" id="uploadProgressContainer" style="display:none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Uploading...</p>
+                </div>
+            </div>
+
+            <!-- File Preview List -->
+            <div class="file-preview-list" id="filePreviewList"></div>
+
+            <!-- Upload Button -->
+            <div class="upload-actions" id="uploadActions" style="display:none;">
+                <button class="btn btn-primary btn-lg" id="processBtn">
+                    🚀 Process Invoices
+                </button>
+                <button class="btn btn-ghost btn-sm" id="clearFilesBtn">
+                    Clear All
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- DASHBOARD SECTION — Analytics Cards                                -->
+    <!-- ================================================================= -->
+    <section class="section section-dark" id="dashboard-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Processing Dashboard</h2>
+                <p class="section-desc">Real-time overview of your invoice processing pipeline.</p>
+            </div>
+
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card" id="statTotal">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="statTotalValue">0</div>
+                    <div class="stat-label">Total Processed</div>
+                </div>
+                <div class="stat-card stat-success" id="statSuccess">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value" id="statSuccessValue">0</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-card stat-warning" id="statFailed">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-value" id="statFailedValue">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-card stat-high" id="statHighValue">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value" id="statHighValueValue">0</div>
+                    <div class="stat-label">High Value</div>
+                </div>
+                <div class="stat-card stat-amount" id="statAmount">
+                    <div class="stat-icon">💵</div>
+                    <div class="stat-value" id="statAmountValue">₹0</div>
+                    <div class="stat-label">Total Amount</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- RESULTS SECTION                                                    -->
+    <!-- ================================================================= -->
+    <section class="section" id="results-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Extraction Results</h2>
+                <p class="section-desc">AI-extracted invoice data with confidence scores and routing information.</p>
+            </div>
+
+            <div class="results-container" id="resultsContainer">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📭</div>
+                    <h3>No results yet</h3>
+                    <p>Upload and process invoices to see extraction results here.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- LOGS SECTION                                                       -->
+    <!-- ================================================================= -->
+    <section class="section section-dark" id="logs-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Processing Logs</h2>
+                <p class="section-desc">Detailed pipeline activity and event history.</p>
+            </div>
+
+            <div class="logs-controls">
+                <div class="log-tabs" id="logTabs">
+                    <button class="log-tab active" data-type="processing">Processing</button>
+                    <button class="log-tab" data-type="routing">Routing</button>
+                    <button class="log-tab" data-type="ocr">OCR</button>
+                    <button class="log-tab" data-type="api">API</button>
+                    <button class="log-tab" data-type="failed">Failed</button>
+                </div>
+                <button class="btn btn-outline btn-sm" id="refreshLogsBtn">🔄 Refresh</button>
+            </div>
+
+            <div class="logs-table-wrapper">
+                <table class="logs-table" id="logsTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>File</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr class="log-empty">
+                            <td colspan="4">No logs available. Process some invoices first.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- JSON VIEWER MODAL                                                  -->
+    <!-- ================================================================= -->
+    <div class="modal-overlay" id="jsonModal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Invoice JSON</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre class="json-viewer" id="jsonViewer"></pre>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline btn-sm" id="modalCopyBtn">📋 Copy JSON</button>
+                <button class="btn btn-primary btn-sm" id="modalDownloadBtn">📥 Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TOAST CONTAINER                                                    -->
+    <!-- ================================================================= -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ================================================================= -->
+    <!-- FOOTER                                                             -->
+    <!-- ================================================================= -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p class="footer-text">
+                    🧾 <strong>InvoiceAI</strong> — AI-Powered Invoice Automation &nbsp;|&nbsp;
+                    Built with Flask + Gemini AI
+                </p>
+                <p class="footer-sub">Powered by Google Gemini 1.5 Flash &bull; pdfplumber &bull; Tesseract OCR</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- App JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
