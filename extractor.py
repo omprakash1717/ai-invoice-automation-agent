@@ -16,7 +16,6 @@ from google import genai
 from config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_MAX_RETRIES, GEMINI_RETRY_DELAY
 from logger import log_api, log_error
 from utils import sanitize_json, validate_invoice_data, get_file_extension
-from PIL import Image
 
 # ---------------------------------------------------------------------------
 # Configure Gemini client
@@ -30,7 +29,7 @@ if GEMINI_API_KEY:
 # ---------------------------------------------------------------------------
 
 EXTRACTION_PROMPT = """You are an intelligent invoice extraction AI.
-Analyze the following invoice text carefully and return ONLY valid JSON.
+Analyze the attached invoice file carefully and return ONLY valid JSON.
 
 Requirements:
 - No markdown formatting
@@ -55,28 +54,26 @@ Return this exact JSON schema:
     }}
   ],
   "confidence_score": number between 0 and 1
-}}
-
-Invoice text:
-{invoice_text}"""
+}}"""
 
 
 # ---------------------------------------------------------------------------
 # Main Extraction Function
 # ---------------------------------------------------------------------------
 
-def extract_invoice_data(text: str, filename: str = "unknown", filepath: str = None) -> dict:
+def extract_invoice_data(filename: str = "unknown", filepath: str = None) -> dict:
     """
-    Send invoice text to Gemini and return validated, structured data.
+    Send invoice file to Gemini natively and return validated, structured data.
 
     Implements:
+      - Native Gemini Multimodal file upload
       - Retry with exponential back-off (up to GEMINI_MAX_RETRIES)
       - JSON sanitisation (strip markdown fences, trailing commas, etc.)
       - Schema validation with fallback defaults
 
     Args:
-        text:     Raw text extracted from the invoice.
         filename: Original filename (used for logging).
+        filepath: Absolute path to the file on disk.
 
     Returns:
         dict with validated invoice fields, plus a "status" key
@@ -87,33 +84,19 @@ def extract_invoice_data(text: str, filename: str = "unknown", filepath: str = N
         log_error(filename, "gemini_api", "GEMINI_API_KEY not configured")
         return _failed_result(filename, "GEMINI_API_KEY not configured in .env file")
 
-    use_multimodal = False
-    image_obj = None
+    if not filepath:
+        log_error(filename, "gemini_api", "No filepath provided")
+        return _failed_result(filename, "No file path provided")
 
-    # Guard: no text to analyse
-    if not text or not text.strip():
-        if filepath:
-            ext = get_file_extension(filepath)
-            if ext in ("jpg", "jpeg", "png"):
-                use_multimodal = True
-                try:
-                    image_obj = Image.open(filepath)
-                except Exception as e:
-                    log_error(filename, "gemini_api", f"Failed to open image for Gemini: {e}")
-                    return _failed_result(filename, "Image file could not be read")
-            else:
-                log_error(filename, "gemini_api", "No text provided for extraction")
-                return _failed_result(filename, "No text could be extracted from the file")
-        else:
-            log_error(filename, "gemini_api", "No text provided for extraction")
-            return _failed_result(filename, "No text could be extracted from the file")
+    uploaded_file = None
+    try:
+        log_api(filename, "upload", "pending", "Uploading file to Gemini")
+        uploaded_file = client.files.upload(file=filepath)
+    except Exception as e:
+        log_error(filename, "gemini_api", f"Failed to upload file: {e}")
+        return _failed_result(filename, f"Failed to upload file to Gemini: {e}")
 
-    # Build the prompt
-    prompt = EXTRACTION_PROMPT.format(invoice_text=text[:8000] if text else "See attached image.")
-
-    contents = [prompt]
-    if use_multimodal and image_obj:
-        contents = [prompt, image_obj]
+    contents = [EXTRACTION_PROMPT, uploaded_file]
 
     # Retry loop
     last_error = ""
@@ -186,6 +169,13 @@ def extract_invoice_data(text: str, filename: str = "unknown", filepath: str = N
                 sleep_time += random.uniform(1.0, 3.0)
 
             time.sleep(sleep_time)
+
+    # Clean up the uploaded file on Gemini servers
+    if uploaded_file:
+        try:
+            client.files.delete(name=uploaded_file.name)
+        except Exception:
+            pass
 
     # All retries exhausted
     log_error(filename, "gemini_api", f"All {GEMINI_MAX_RETRIES} attempts failed: {last_error}")

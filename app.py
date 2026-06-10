@@ -22,7 +22,6 @@ from config import (
     MAX_CONTENT_LENGTH, SECRET_KEY, FLASK_DEBUG, ALLOWED_EXTENSIONS, BASE_DIR
 )
 from utils import validate_file, generate_id, format_timestamp, get_file_extension
-from parser import parse_file
 from extractor import extract_invoice_data
 from router import route_invoice
 from logger import log_processing, log_error, read_logs
@@ -154,26 +153,9 @@ def upload():
     def process_file_pipeline(filename, filepath):
         proc_id = generate_id()
 
-        # --- Step 1: Extract text ---
-        log_processing(filename, "processing", "Starting text extraction")
-        extracted_text = parse_file(filepath)
-
-        if not extracted_text.strip():
-            ext = get_file_extension(filepath)
-            if ext not in ("jpg", "jpeg", "png"):
-                log_error(filename, "extraction", "No text extracted")
-                return {
-                    "id": proc_id,
-                    "filename": filename,
-                    "status": "failed",
-                    "error": "Could not extract text from file. The file may be empty, corrupted, or unsupported.",
-                }, False
-            else:
-                log_processing(filename, "processing", "OCR failed/unavailable, falling back to Gemini Vision")
-
-        # --- Step 2: Gemini AI extraction ---
-        log_processing(filename, "processing", "Sending to Gemini AI")
-        invoice_data = extract_invoice_data(extracted_text, filename, filepath)
+        # --- Step 1: Gemini AI extraction ---
+        log_processing(filename, "processing", "Sending file to Gemini AI for native extraction")
+        invoice_data = extract_invoice_data(filename, filepath)
 
         # Check if we hit a fatal API limit/quota error
         is_fatal_quota = False
@@ -201,7 +183,7 @@ def upload():
                 "confidence_score": invoice_data.get("confidence_score", 0),
             },
             "routing": routing_result,
-            "extracted_text_preview": extracted_text[:500] if extracted_text else "[Used Gemini Vision]",
+            "extracted_text_preview": "[Native Gemini Extraction]",
             "processed_at": format_timestamp(),
         }
 
@@ -242,6 +224,13 @@ def upload():
                         "processed_at": format_timestamp(),
                     }
                     processed_results[skipped_id] = skipped_result
+                    
+                    try:
+                        with open(os.path.join(SAMPLE_OUTPUT_FOLDER, f"{skipped_id}.json"), "w", encoding="utf-8") as f:
+                            json.dump(skipped_result, f, indent=2, default=str)
+                    except Exception:
+                        pass
+                        
                     results.append(skipped_result)
                     continue
 
@@ -290,6 +279,13 @@ def upload():
                     "processed_at": format_timestamp(),
                 }
                 processed_results[failed_proc_id] = failed_result
+                
+                try:
+                    with open(os.path.join(SAMPLE_OUTPUT_FOLDER, f"{failed_proc_id}.json"), "w", encoding="utf-8") as f:
+                        json.dump(failed_result, f, indent=2, default=str)
+                except Exception:
+                    pass
+                    
                 results.append(failed_result)
 
     # Note: we don't append placeholder "Skipped" results for cancelled futures here,
