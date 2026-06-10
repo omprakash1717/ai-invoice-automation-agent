@@ -442,6 +442,28 @@ function setupExportBtn() {
             showToast("Export failed: " + err.message, "error");
         }
     });
+
+    const clearResultsBtn = $("#clearResultsBtn");
+    if (clearResultsBtn) {
+        clearResultsBtn.addEventListener("click", async () => {
+            if (!confirm("Are you sure you want to clear all processed results?")) return;
+            try {
+                const res = await fetch("/results", { method: "DELETE" });
+                if (res.ok) {
+                    $("#resultsContainer").innerHTML = `
+                        <div class="empty-state" id="emptyState">
+                            <div class="empty-icon">📭</div>
+                            <h3>No results yet</h3>
+                            <p>Upload and process invoices to see extraction results here.</p>
+                        </div>
+                    `;
+                    showToast("Results cleared successfully", "success");
+                }
+            } catch (err) {
+                showToast("Failed to clear results", "error");
+            }
+        });
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════

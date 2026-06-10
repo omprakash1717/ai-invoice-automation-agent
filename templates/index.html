@@ -148,9 +148,12 @@
     <!-- ================================================================= -->
     <section class="section" id="results-section">
         <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Extraction Results</h2>
-                <p class="section-desc">AI-extracted invoice data with confidence scores and routing information.</p>
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h2 class="section-title">Extraction Results</h2>
+                    <p class="section-desc">AI-extracted invoice data with confidence scores and routing information.</p>
+                </div>
+                <button class="btn btn-outline btn-sm" id="clearResultsBtn" style="color: var(--danger); border-color: var(--danger);">🗑️ Clear Results</button>
             </div>
 
             <div class="results-container" id="resultsContainer">

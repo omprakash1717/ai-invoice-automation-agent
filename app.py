@@ -317,17 +317,18 @@ def get_logs():
 
 @app.route("/results", methods=["GET"])
 def get_results():
-    """
-    GET /results
-    Return all processed invoice results.
-    """
-    results_list = list(processed_results.values())
-    # Sort by processed_at descending
-    results_list.sort(key=lambda r: r.get("processed_at", ""), reverse=True)
-    return jsonify({
-        "count": len(results_list),
-        "results": results_list,
-    })
+    # Sort results by processed_at descending
+    sorted_results = sorted(
+        list(processed_results.values()),
+        key=lambda x: x.get("processed_at", ""),
+        reverse=True
+    )
+    return jsonify({"results": sorted_results})
+
+@app.route("/results", methods=["DELETE"])
+def clear_results():
+    processed_results.clear()
+    return jsonify({"message": "Results cleared successfully"})
 
 
 @app.route("/download/json/<proc_id>", methods=["GET"])
