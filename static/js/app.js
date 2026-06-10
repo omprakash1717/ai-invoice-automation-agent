@@ -189,7 +189,8 @@ async function uploadFiles() {
 // ══════════════════════════════════════════════════════════════════════
 
 function renderResults(results) {
-    if (emptyState) emptyState.style.display = "none";
+    const currentEmptyState = document.getElementById("emptyState");
+    if (currentEmptyState) currentEmptyState.style.display = "none";
 
     results.forEach((r) => {
         const card = document.createElement("div");
